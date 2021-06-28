@@ -119,15 +119,29 @@ class Home extends Component {
         xhrRestaurants.onload = this.setState({ loading: true })
         xhrRestaurants.addEventListener('readystatechange', function () {
             if (this.readyState === 4) {
+                console.log(this.responseText)
                 that.setState({
                     restaurants: JSON.parse(this.responseText).restaurants,
                     loading: false
                 });
             }
         })
-        xhrRestaurants.open("GET", this.props.baseUrl + 'restaurant');
+        xhrRestaurants.open("GET", "http://localhost:8080/api/" + 'restaurant');
+        xhrRestaurants.setRequestHeader("Accept", "application/json");
         xhrRestaurants.send(restaurantsData);
     }
+    /*let xhrPaymentMethods = new XMLHttpRequest();
+    let that = this;
+    xhrPaymentMethods.addEventListener("readystatechange", function () {
+        if (this.readyState === 4 && xhrPaymentMethods.status === 200) {
+            const restaurantsObjArray = JSON.parse(this.responseText).restaurants;
+            // Saving all the restaurant details in state variable
+            that.setState({ restaurantsList: restaurantsObjArray });
+        }
+    });
+    xhrPaymentMethods.open("GET", this.props.baseUrl + "restaurant");
+    xhrPaymentMethods.setRequestHeader("Accept", "application/json");
+    xhrPaymentMethods.send();*/
 
     //method updates the no columns according to the window size
     noOfColumns = () => {
