@@ -14,7 +14,7 @@ import Typography from '@material-ui/core/Typography';
 import { withStyles } from '@material-ui/core/styles';
 
 //importing font awesome
-import '../../../node_modules/font-awesome/css/font-awesome.min.css';
+//import '../../../node_modules/font-awesome/css/font-awesome.min.css';
 
 //importing the css file of the Home page
 import './Home.css';
