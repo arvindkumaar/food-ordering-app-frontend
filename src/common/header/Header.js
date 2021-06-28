@@ -9,9 +9,11 @@ import Toolbar from '@material-ui/core/Toolbar';
 import IconButton from '@material-ui/core/IconButton';
 import FastfoodIcon from '@material-ui/icons/Fastfood';
 import Button from '@material-ui/core/Button';
+import SearchIcon from '@material-ui/icons/Search';
 import AccountCircle from '@material-ui/icons/AccountCircle';
 import InputLabel from "@material-ui/core/InputLabel";
 import Input from "@material-ui/core/Input";
+import InputAdornment from "@material-ui/core/InputAdornment";
 import Modal from 'react-modal';
 import Tabs from '@material-ui/core/Tabs';
 import Tab from '@material-ui/core/Tab';
@@ -20,10 +22,13 @@ import FormControl from '@material-ui/core/FormControl';
 import PropTypes from 'prop-types';
 import FormHelperText from '@material-ui/core/FormHelperText';
 import validator from 'validator';
+import Snackbar from '@material-ui/core/Snackbar';
+import CloseIcon from '@material-ui/icons/Close';
 import Menu from '@material-ui/core/Menu';
 import MenuItem from '@material-ui/core/MenuItem';
 import {Link} from 'react-router-dom';
 
+//importing the css file of the header
 import './Header.css';
 
 //styles for the header using breakpoints to make the header responsive
@@ -71,6 +76,15 @@ const styles = theme => ({
     },
 });
 
+// theme for changing the border bottom color of the searchbox to white when customer clicks on the serach field 
+const theme = createMuiTheme({
+    palette: {
+        primary: {
+            main: '#ffffff',
+        }
+    }
+});
+
 //custom style for modal
 const customStyles = {
     content: {
@@ -96,8 +110,7 @@ TabContainer.propTypes = {
     children: PropTypes.node.isRequired
 }
 
-
-    // clears all the values and required field validation messages and error messages when modal is opened
+// clears all the values and required field validation messages and error messages when modal is opened
     openModalHandler = () => {
         this.setState({
             modalIsOpen: true,
@@ -193,6 +206,52 @@ TabContainer.propTypes = {
         this.setState({loginPassword: e.target.value});
     }
 
+    //closes the login snackbar
+    loginSnackBarCloseHandler = (event, reason) => {
+        if (reason === 'clickaway') {
+            return;
+        }
+        this.setState({
+            openLoginSnackBar: false
+        });
+    }
+
+    // Integrating login functionality with backend
+    sendLoginDetails = () => {
+        let loginData = null;
+        let that = this;
+        let xhrLogin = new XMLHttpRequest();
+        xhrLogin.addEventListener("readystatechange", function () {
+            if (this.readyState === 4) {
+                let loginResponse = JSON.parse(this.responseText);
+                // displays the login error message
+                if (this.status === 401) {
+                    that.setState({
+                        loginErroMessage: loginResponse.message,
+                        loginErroMessageRequired: "dispBlock"
+                    });
+                }
+                // after successful login stores uuid, access-token, first-name inside session storage and displays the login snackbar
+                if (this.status === 200) {
+                    sessionStorage.setItem("uuid", loginResponse.id);
+                    sessionStorage.setItem("access-token", xhrLogin.getResponseHeader("access-token"));
+                    sessionStorage.setItem("first-name", loginResponse.first_name)
+                    that.setState({
+                        loggedIn: true,
+                        openLoginSnackBar: true
+                    });
+                    //closes the modal after successful login
+                    that.closeModalHandler();
+                }
+            }
+        });
+        let url = this.props.baseUrl + 'customer/login';
+        xhrLogin.open("Post", url);
+        xhrLogin.setRequestHeader("Authorization", "Basic " + window.btoa(this.state.loginContactNo + ":" + this.state.loginPassword));
+        xhrLogin.setRequestHeader("Content-Type", "application/json");
+        xhrLogin.setRequestHeader("Cache-Control", "no-cache");
+        xhrLogin.send(loginData);
+    }
 
     // signup form validation 
     signupClickHandler = () => {
@@ -311,6 +370,55 @@ TabContainer.propTypes = {
         });
     }
 
+    // closes the signup snackbar
+    signupSnackBarCloseHandler = (event, reason) => {
+        if (reason === 'clickaway') {
+            return;
+        }
+        this.setState({
+            openSignupSnackBar: false
+        });
+    }
+
+    // Integrating signup functionality with backend
+    sendSignupDetails = () => {
+        let signupData = JSON.stringify({
+            "contact_number": this.state.signupContactNo,
+            "email_address": this.state.signupEmail,
+            "first_name": this.state.signupFirstname,
+            "last_name": this.state.singupLastname,
+            "password": this.state.signupPassword
+        });
+
+        let that = this;
+        let xhrSignup = new XMLHttpRequest();
+        xhrSignup.addEventListener("readystatechange", function () {
+            if (this.readyState === 4) {
+                let responseText = JSON.parse(this.responseText);
+                // displays the signup error message
+                if (this.status === 400) {
+                    that.setState({
+                        signupErrorMessage: responseText.message,
+                        signupErrorMessageRequired: "dispBlock"
+                    });
+                }
+                // after successful signup tab changes to login tab inside the modal and displays the signup snackbar
+                if (this.status === 201) {
+                    that.setState({
+                        value: 0,
+                        openSignupSnackBar: true
+                    });
+                    that.clearSignupForm();
+                }
+            }
+        });
+        let url = this.props.baseUrl + 'customer/signup'
+        xhrSignup.open("POST", url);
+        xhrSignup.setRequestHeader("Content-Type", "application/json");
+        xhrSignup.setRequestHeader("Cache-Control", "no-cache");
+        xhrSignup.send(signupData);
+    }
+
     // called when customer clicks on profile icon
     onProfileIconClick = (e) => {
         this.setState({'menuState': !this.state.menuState, 'anchorEl': e.currentTarget});
@@ -328,6 +436,16 @@ TabContainer.propTypes = {
         });
     }
 
+    // when customer clicks on logout inside the menu remove's access-token, uuid, first-name from sessionStorage and redirects to home page and closes the menu
+    onLogout = () => {
+        sessionStorage.removeItem('access-token');
+        sessionStorage.removeItem('uuid');
+        sessionStorage.removeItem('first-name');
+        this.setState({
+            loggedIn: false
+        })
+        this.onMenuClose();
+    }
 
 class Header extends Component {
 
@@ -343,6 +461,7 @@ class Header extends Component {
             loginPassword: "",
             loginPasswordRequiredMessage: "required",
             loggedIn: sessionStorage.getItem("access-token") == null ? false : true,
+            openLoginSnackBar: false,
             loginErroMessage: "",
             loginErroMessageRequired: "dispNone",
             signupFirstname: "",
@@ -378,7 +497,28 @@ class Header extends Component {
                             <FastfoodIcon/>
                         </IconButton>
                         <div className={classes.grow}/>
-                        
+                        {/* searchbox will be displayed only if needed */}
+                        {this.props.showSearchBox ?
+                            <div className={classes.searchBox}>
+                                <ThemeProvider theme={theme}>
+                                    <InputLabel htmlFor="search-box-input"/>
+                                    <Input id="search-box-input"
+                                           startAdornment={
+                                               <InputAdornment position="start">
+                                                   <SearchIcon/>
+                                               </InputAdornment>
+                                           }
+                                           placeholder="Search by Restaurant Name"
+                                           classes={{
+                                               root: classes.inputRoot,
+                                               input: classes.inputInput,
+                                           }}
+                                           onChange={this.props.searchHandler}
+                                    />
+                                </ThemeProvider>
+                            </div>
+                            : null
+                        }
                         <div className={classes.grow}/>
                         {/* If customer is not logged in then it displays login button otherwise displays the customer's firstname */}
                         {!this.state.loggedIn ?
@@ -419,6 +559,7 @@ class Header extends Component {
                     {/* If value is 0 then displays the first tab of the modal */}
                     {this.state.value === 0 &&
                     <TabContainer>
+                        {/* login form with contact no and password input fields */}
                         <FormControl required className="login-and-signup-forms">
                             <InputLabel htmlFor="contactno">Contact No</InputLabel>
                             <Input id="contactno" type="text" value={this.state.loginContactNo}
@@ -446,6 +587,7 @@ class Header extends Component {
                     }
                     {this.state.value === 1 &&
                     <TabContainer>
+                        {/* signup form contains firstname, lastname, email, password and contact no input fields */}
                         <FormControl required className="login-and-signup-forms">
                             <InputLabel htmlFor="firstname">First Name</InputLabel>
                             <Input id="firstname" type="text" value={this.state.signupFirstname}
@@ -499,11 +641,46 @@ class Header extends Component {
                     </TabContainer>
                     }
                 </Modal>
+                {/* login snackbar to display the message if customer login is successful  */}
+                <Snackbar
+                    anchorOrigin={{
+                        vertical: 'bottom',
+                        horizontal: 'left',
+                    }}
+                    open={this.state.openLoginSnackBar}
+                    autoHideDuration={10000}
+                    onClose={this.loginSnackBarCloseHandler}
+                    message="Logged in successfully!"
+                    action={
+                        <React.Fragment>
+                            <IconButton size="small" aria-label="close" color="inherit"
+                                        onClick={this.loginSnackBarCloseHandler}>
+                                <CloseIcon fontSize="small"/>
+                            </IconButton>
+                        </React.Fragment>
+                    }
+                />
+                {/* signup snackbar to display the message if customer registered successfully  */}
+                <Snackbar
+                    anchorOrigin={{
+                        vertical: 'bottom',
+                        horizontal: 'left',
+                    }}
+                    open={this.state.openSignupSnackBar}
+                    autoHideDuration={10000}
+                    onClose={this.signupSnackBarCloseHandler}
+                    message="Registered successfully! Please login now!"
+                    action={
+                        <React.Fragment>
+                            <IconButton size="small" aria-label="close" color="inherit"
+                                        onClick={this.signupSnackBarCloseHandler}>
+                                <CloseIcon fontSize="small"/>
+                            </IconButton>
+                        </React.Fragment>
+                    }
+                />
             </div>
         );
     }
-
-
 }
-
 export default withStyles(styles)(Header);
