@@ -22,6 +22,229 @@ import Grid from "@material-ui/core/Grid";
 
 class Details extends Component {
 
+    constructor() {
+        super();
+        this.state = {
+            id: null,
+            restaurant_name: null,
+            photo_URL: null,
+            customer_rating: null,
+            average_price: null,
+            number_customers_rated: null,
+            locality: null,
+            categories: [],
+            open: false,
+            totalAmount: 0,
+            totalItems: 0,
+            cartEmpty: false,
+            orderItems: {id: null, items: [], total: 0},
+            cartItems: [],
+            cartItem: {},
+            itemQuantityDecreased: false,
+            nonloggedIn: false,
+            itemRemovedFromCart: false,
+            itemQuantityIncreased: false,
+            itemAddedFromCart: false,
+        }
+
+    }
+
+    componentDidMount() {
+        // Get profile 
+        let data = null;
+        let xhr = new XMLHttpRequest();
+        let that = this;
+
+        xhr.addEventListener("readystatechange", function () {
+            if (this.readyState === 4) {
+                that.setState({
+                    id: JSON.parse(this.responseText).id,
+                    restaurant_name: JSON.parse(this.responseText).restaurant_name,
+                    photo_URL: JSON.parse(this.responseText).photo_URL,
+                    customer_rating: JSON.parse(this.responseText).customer_rating,
+                    average_price: JSON.parse(this.responseText).average_price,
+                    number_customers_rated: JSON.parse(this.responseText).number_customers_rated,
+                    locality: JSON.parse(this.responseText).address.locality,
+                    categories: JSON.parse(this.responseText).categories,
+                    orderItems: {id: JSON.parse(this.responseText).id},
+
+
+                });
+            }
+        });
+
+        let url = this.props.baseUrl + 'restaurant/';
+
+        xhr.open("GET", url + this.props.match.params.restaurantId);
+        xhr.setRequestHeader("Cache-Control", "no-cache");
+        xhr.send(data);
+    }
+
+     //Function to get the index of the item
+     getIndex = (value, arr, prop) => {
+        for (let i = 0; i < arr.length; i++) {
+            if (arr[i][prop] === value) {
+                return i;
+            }
+        }
+        return -1; //to handle the case where the value doesn't exist
+    }
+
+    /**
+     * This function is called when you add an item to the cart.
+     * @param e - event
+     * @param id - item id
+     * @param type - type (VEG or NON_VEG)
+     * @param name - item name
+     * @param price - price
+     */
+     addToCartHandler = (e, id, type, name, price) => {
+        var totalAmount = this.state.totalAmount;
+        var totalItems = this.state.totalItems;
+        totalItems += 1;
+
+        const newItem = this.state.cartItem;
+        newItem.id = id;
+        newItem.type = type;
+        newItem.name = name;
+        newItem.pricePerItem = price;
+        newItem.quantity = 1;
+        newItem.priceForAll = price;
+
+        this.setState({cartItem: newItem});
+
+        totalAmount += price;
+
+        if (this.state.orderItems.items !== undefined && this.state.orderItems.items.some(item => (item.name === name))) {
+            var index = this.getIndex(name, this.state.orderItems.items, "name");
+            var quantity = this.state.orderItems.items[index].quantity + 1;
+            var priceForAll = this.state.orderItems.items[index].priceForAll + this.state.orderItems.items[index].pricePerItem;
+            var item = this.state.orderItems.items[index];
+            item.quantity = quantity;
+            item.priceForAll = priceForAll;
+            this.setState(item);
+
+        } else {
+
+            this.state.cartItems.push(this.state.cartItem);
+            this.setState({cartItem: {}});
+
+
+            const orderItems = this.state.orderItems;
+            orderItems.items = this.state.cartItems;
+            this.setState({orderItems: orderItems});
+        }
+
+        this.setState({open: true});
+        this.setState({totalItems: totalItems});
+        this.setState({totalAmount: totalAmount});
+
+
+    }
+     /**
+     * This function is called when an item is removed from the cart.
+     * @param e - event
+     * @param id - item id
+     * @param type - type (VEG or NON_VEG)
+     * @param name - item name
+     * @param price - price
+     */
+      removeFromCartHandler = (e, id, type, name, price) => {
+
+        var index = this.getIndex(name, this.state.orderItems.items, "name");
+
+        if (this.state.orderItems.items[index].quantity > 1) {
+            var quantity = this.state.orderItems.items[index].quantity - 1;
+            var priceForAll = this.state.orderItems.items[index].priceForAll - this.state.orderItems.items[index].pricePerItem;
+            var item = this.state.orderItems.items[index];
+            item.quantity = quantity;
+            item.priceForAll = priceForAll;
+            this.setState(item);
+            this.setState({itemQuantityDecreased: true});
+
+        } else {
+
+            this.state.orderItems.items.splice(index, 1);
+            this.setState({itemRemovedFromCart: true});
+
+        }
+
+
+        var totalAmount = this.state.totalAmount;
+        totalAmount -= price;
+        var totalItems = this.state.totalItems;
+        totalItems -= 1;
+
+        this.setState({totalItems: totalItems});
+        this.setState({totalAmount: totalAmount});
+
+    }
+
+
+    addAnItemFromCartHandler = (item, index) => {
+        const itemIndex = this.getIndex(item.name, this.state.orderItems.items, "name");
+
+        var quantity = this.state.orderItems.items[itemIndex].quantity + 1;
+        var priceForAll = this.state.orderItems.items[itemIndex].priceForAll + this.state.orderItems.items[itemIndex].pricePerItem;
+        var itemAdded = this.state.orderItems.items[itemIndex];
+        itemAdded.quantity = quantity;
+        itemAdded.priceForAll = priceForAll;
+        this.setState(item);
+        this.setState({ itemQuantityIncreased: true });
+        var totalAmount = this.state.totalAmount;
+        totalAmount += item.pricePerItem;
+        var totalItems = this.state.totalItems;
+        totalItems += 1;
+
+        this.setState({ totalItems: totalItems });
+        this.setState({ totalAmount: totalAmount });
+    }
+
+    closeHandler = () => {
+        this.setState({ open: false })
+        this.setState({ cartEmpty: false })
+        this.setState({ nonloggedIn: false })
+        this.setState({ itemQuantityDecreased: false })
+        this.setState({ itemRemovedFromCart: false })
+        this.setState({ itemAddedFromCart: false })
+        this.setState({ itemQuantityIncreased: false })
+    }
+
+     /**
+     * This funciton is called when checkout button is clicked.
+     */
+      checkoutHandler = () => {
+        if (this.state.totalItems === 0) {
+            this.setState({cartEmpty: true});
+        } else if (this.state.totalItems > 0 && sessionStorage.getItem('access-token') === null) {
+            this.setState({nonloggedIn: true});
+        } else {
+            this.props.history.push({
+                pathname: '/checkout/',
+                state: {
+                    orderItems: this.state.orderItems,
+                    total: this.state.totalAmount, restaurantName: this.state.restaurant_name
+                }
+            })
+        }
+    }
+
+     //Function used to capitalize the string
+     Capitalize(str) {
+        var arr = str.split(" ")
+        var pascalCasedString = ""
+        arr.map(a => (
+                pascalCasedString += a.charAt(0).toUpperCase() + a.slice(1) + " "
+            )
+        )
+        return pascalCasedString
+    }
+
+
+
+
+
+
     render() {
         return (
 
@@ -241,3 +464,5 @@ class Details extends Component {
 }
 
 export default Details;
+
+

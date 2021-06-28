@@ -1,44 +1,34 @@
-import React, { Component } from "react";
-import { BrowserRouter as Router, Route } from "react-router-dom";
-import Checkout from "../screens/checkout/Checkout";
-import Home from "../screens/home/Home";
-import Details from "../screens/details/Details";
+import React, {Component} from 'react'
 
+//Router import for redirection.
+import {Route, Switch} from "react-router-dom";
 
-// This is a controller component that provides access and routing for the SPA Food Ordering App and its 4 views viz.
-// 1. Home Page ("/")
-// 2. Details Page ("/restaurant/:restaurantId")
-// 3. Checkout Page ("/checkout")
+//Imports of different pages in the application
+import Home from './home/Home';
+import Profile from './profile/Profile';
+import Checkout from "./checkout/Checkout";
+import Details from "./details/Details";
 
+/**
+ * This class represents the whole FoodOrdering Application.
+ */
 class Controller extends Component {
-  constructor() {
-    super();
-    this.baseUrl = "http://localhost:8080/api/";
-  }
+    constructor() {
+        super();
+        this.baseUrl = 'http://localhost:8080/api/'
+    }
 
-  render() {
-    return (
-      <Router>
-        <div className="main-container">
-          <Route
-            exact
-            path="/checkout"
-            render={(props) => <Checkout {...props} baseUrl={this.baseUrl} />}
-          />
-          <Route
-            exact
-            path="/"
-            render={(props) => <Home {...props} baseUrl={this.baseUrl} />}
-          />
-          <Route
-            exact
-            path="/restaurant/:restaurantId"
-            render={(props) => <Details {...props} baseUrl={this.baseUrl} />}
-          />
-        </div>
-      </Router>
-    );
-  }
+    render() {
+        return (
+            <Switch>
+                <Route exact path='/' render={(props) => <Home {...props} baseUrl={this.baseUrl}/>}/>
+                <Route exact path='/profile' render={(props) => <Profile {...props} />}/> 
+                <Route exact path='/restaurant/:restaurantId'
+                       render={(props) => <Details {...props} baseUrl={this.baseUrl}/>}/>
+                <Route exact path='/checkout' render={(props) => <Checkout {...props} baseUrl={this.baseUrl}/>}/>
+            </Switch>
+        )
+    }
 }
 
 export default Controller;

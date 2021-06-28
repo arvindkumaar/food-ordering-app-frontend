@@ -14,7 +14,7 @@ import Typography from '@material-ui/core/Typography';
 import { withStyles } from '@material-ui/core/styles';
 
 //importing font awesome
-//import '../../../node_modules/font-awesome/css/font-awesome.min.css';
+import '../../../node_modules/font-awesome/css/font-awesome.min.css';
 
 //importing the css file of the Home page
 import './Home.css';
@@ -126,22 +126,10 @@ class Home extends Component {
                 });
             }
         })
-        xhrRestaurants.open("GET", "http://localhost:8080/api/" + 'restaurant');
+        xhrRestaurants.open("GET", this.props.baseUrl + 'restaurant');
         xhrRestaurants.setRequestHeader("Accept", "application/json");
         xhrRestaurants.send(restaurantsData);
     }
-    /*let xhrPaymentMethods = new XMLHttpRequest();
-    let that = this;
-    xhrPaymentMethods.addEventListener("readystatechange", function () {
-        if (this.readyState === 4 && xhrPaymentMethods.status === 200) {
-            const restaurantsObjArray = JSON.parse(this.responseText).restaurants;
-            // Saving all the restaurant details in state variable
-            that.setState({ restaurantsList: restaurantsObjArray });
-        }
-    });
-    xhrPaymentMethods.open("GET", this.props.baseUrl + "restaurant");
-    xhrPaymentMethods.setRequestHeader("Accept", "application/json");
-    xhrPaymentMethods.send();*/
 
     //method updates the no columns according to the window size
     noOfColumns = () => {
@@ -188,7 +176,7 @@ class Home extends Component {
             if (this.readyState === 4) {
                 if (!JSON.parse(this.responseText).restaurants) {
                     that.setState({
-                        restaurants: null
+                        restaurants: ""
                     });
                 } else {
                     that.setState({
